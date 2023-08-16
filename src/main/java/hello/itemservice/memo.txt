@@ -1,0 +1,305 @@
+
+
+https://docs.spring.io/spring-framework/docs/current/reference/html/data-access.html#jdbc-JdbcTemplate
+
+int rowCount = jdbcTemplate.queryForObject("select count(*) from t_actor", Integer.class);
+
+int countOfActorsNamedJoe = jdbcTemplate.queryForObject("select count(*) from t_actor where first_name = ?", Integer.class, "Joe");
+
+String lastName = jdbcTemplate.queryForObject("select last_name from t_actor where id = ?", String.class, 1212L);
+
+Actor actor = jdbcTemplate(queryForObject("select first_name, last_name from t_actor where id = ?",
+    (resultSet, rowNum) -> {
+    Actor newActor = new Actor();
+    newActor.setFirstName(resultSet.getString("first_name"));
+    newActor.setLastName(resultSEt.getString("last_name"));
+    return newActor;
+}, 1212L);
+
+private final RowMapper<Actor> actorRowMapper = (resultSEt, rowNum) -> {
+    Actor actor = new Actor();
+    actor.setFirstName(resultSet.getString("first_name"));
+    actor.setLastName(resultSet.getString("last_name"));
+    return actor;
+}
+
+
+//여러 로우를 조회할 때
+public List<Actor> findAllActors() {
+    return this.jdbcTemplate.query("select first_name, last_name, from t_actor", actorRowMapper);
+}
+
+jdbcTemplate.update("insert into t_actor (first_name, last_name) values (?, ?)", "Leonor", "Watling");
+
+jdbcTemplate.update("update t_actor set last_name = where id = ?", "Banjo", 5276L);
+
+jdbcTemplate.update("delete from t_actor where id = ?", Long.valueOf(actorId));
+
+jdbcTemplate.execute("create table mytable (id integer, name varchar(100))");
+
+jdbcTemplate.update("call SUPPORT.REFRESH_ACTORS_SUMMARY(?)", Long.valueOf(unionId));
+
+
+String sql = "update item set item_name:itemName, price=:price, quantity=:quantity where id=:id";
+
+<update id="update">
+    update item set item_name=#{itemName},
+    price=#{price},
+    quantity=#{quantity},
+    where id = #{id}
+</update>
+
+
+<select id="findActiveBlogWithTitleLike" resultType="Blog">
+    select * from blog where state = 'active'
+    <if test="title !=null">
+     and title like #{title}
+    </if>
+</select>
+
+choose, when, otherwise
+<select id="findActiveBlogLike" resultType="Blog">
+    <choose>
+    <when test="title != null">
+         and title like #{title}
+     </when>
+     <when test"author != null and author.name != null">
+      and author_name like #{author.name}
+     </when>
+     <otherwise>
+        and featured = 1
+     </otherwise>
+    </choose>
+</select>
+
+trim, where, set
+<select id="findActiveBlogLike" resultType="Blog">
+    select * from BLOG WHERE
+    <if test="state != null>
+    state = #{state}
+    </if>
+    <if test="title != null">
+     and title like #{title}
+    </if>
+    <if test="author != null and author.name != null">
+       and author_name like #{author.name}
+    </if>
+</select>
+
+조건문에 하나도 걸리지 않을때 where가 문제가 된다.
+
+<select id="findActiveBlogLike" resultType="Blog">
+select * from blog
+    <where>
+        <if test="state != null>
+        state = #{state}
+        </if>
+        <if test="title != null">
+         and title like #{title}
+        </if>
+        <if test="author != null and author.name != null">
+           and author_name like #{author.name}
+        </if>
+    </where>
+</select>
+
+<trim prefix="WHERE" preifxOverride="AND |OR">
+</trim>
+
+컬렉션 반복처리, List를 전달한다.
+<select id="selectPostIn" resultType="domain.blog.Post">
+    select * from post p
+    <where>
+        <foreach item="item" index="index" collection="list" open"ID in (" separator="," close = ")" nullable="true">
+        #{item}
+        </foreach>
+    </where>
+</select>
+
+재사용 가능한 SQL 조각
+두개의 테이블 조인
+Apologies for any confusion earlier. The MyBatis query you provided will produce the following SQL query:
+
+sql
+Copy code
+SELECT
+  t1.id AS t1_id, t1.username AS t1_username, t1.password AS t1_password,
+  t2.id AS t2_id, t2.username AS t2_username, t2.password AS t2_password
+FROM
+  some_table t1
+CROSS JOIN
+  some_table t2
+
+Here's how the query is generated:
+
+The <sql> element with the id attribute "userColumns" defines the columns to be selected from the table. ${alias} is a placeholder for the table alias.
+
+The <select> element with the id attribute "selectUsers" specifies the main query. It includes two instances of the <include> element that insert the column selection defined in "userColumns", each with a different alias.
+
+The query performs a cross join on the some_table table using the aliases t1 and t2.
+
+The resultType is set to "map", which means the result will be returned as a list of maps, where each map represents a row of data with column names as keys and column values as values.
+
+So, the final SQL query retrieves columns id, username, and password from two instances of the some_table table (aliased as t1 and t2) using a cross join operation. The result will be a list of maps containing the selected columns for each alias.
+
+<sql id="userColumns" ${alias}.id, ${alias}.username, ${alias.password} </sql>
+유저 컬럼에 있는 alias를 t1으로
+<select id="selectUsers" resultType="map">
+    select
+    <include refid="userColumns"><property name="alias" value="t1"/></include>
+    <include refid="userColumns"><property name="alias" value="t2"/></inclue>
+    from (some_table t1) cross join (some_table t2)
+</select>
+
+SELECT
+  t1.id AS t1_id, t1.username AS t1_username, t1.password AS t1_password,
+  t2.id AS t2_id, t2.username AS t2_username, t2.password AS t2_password
+FROM
+  some_table t1
+CROSS JOIN
+  some_table t2
+
+
+sometable, someinclude, select
+
+/*
+The provided XML snippet is a simplified representation of a MyBatis SQL mapping. MyBatis is a framework that simplifies working with SQL databases in Java applications. It uses XML or annotations to define database queries and maps the results to Java objects.
+
+Based on the XML snippet you've provided, it looks like you're building a dynamic SQL query with placeholders and includes. Here's the breakdown of the query construction:
+
+<sql id="sometable">: This defines a SQL fragment with a placeholder ${prefix}Table.
+
+<sql id="someinclude">: This defines another SQL fragment that includes a <include> tag, which references a dynamic parameter ${include_target}.
+
+<select id="select" resultType="map">: This is the main <select> statement with an id attribute set to "select" and a resultType attribute set to "map", which implies that the query result will be mapped to a Map.
+
+Inside the <select> statement, you have a column list: field1, field2, field3.
+
+<include refid="someinclude">: This includes the SQL fragment defined earlier with the id attribute "someinclude". Inside this <include> tag, there are two <property> tags used to set values for placeholders ${prefix} and ${include_target}.
+
+So, let's substitute the placeholders with their values:
+
+${prefix} is set to "Some"
+${include_target} is set to "sometable"
+Now, let's put everything together:
+
+sql
+Copy code
+select
+  field1, field2, field3
+from
+  SomeTable
+This is the resulting SQL query that is generated by MyBatis when processing the provided XML snippet. It will retrieve field1, field2, and field3 columns from the table named SomeTable.
+*/
+
+//prefix를 정할 수 있음.
+<sql id="sometable">
+    ${prefix}Table
+</sql>
+
+//from 뒤에 include 해서 사용할 수 있음.
+<sql id="someinclude">
+from
+  <include refid="${include_target}"/>
+</sql>
+<select id="select" resultType="map">
+select
+  field1, field2, field3
+    <include refid="someinclude">
+    //밸류를 직접 지정 Some + table
+      <property name="prefix" value="Some"/>
+      <property name="include_target" value="sometable"/>
+    </include>
+</select>
+
+//컬럼명 객체 프로퍼티명 일치 시키기
+<select>
+select
+    user_id as "id",
+    user_name as "userName",
+    hashed_password as "hashedPassword",
+    from some_table
+where id = #{id}
+</select>
+
+
+//별칭 사용하지 않고 일치시키기
+컬럼 이름 바꾸기 위해서 매핑
+<resultMap>
+    <id property="id" column="user_id"/>
+    <result property="username" column="user_name"/>
+    <result property="password" column"hashed_password"/>
+</resultMap>
+
+쿼리에서 바뀐이름 사용해줌
+<select id="selectusers" resultMap="userResultMap">
+    select user_id, user_name, hashed_password
+    from some_table
+    where id = #{id}
+</select>
+
+https://mybatis.org/mybatis-3/ko/sqlmap-xml.html#Result_Maps
+
+
+
+
+
+Spring Data
+-----------------------------------------------------
+<<Interface>>
+Repository
+
+<<Interface>>
+CrudRepository
+save(S)
+findOne(ID)
+exists(Id)
+count()
+delete(T)
+
+<<Interface>>
+PagingAndSortingRepository
+findAll(Sort)
+findAll(Pageable)
+
+스프링데이터 JPA
+-----------------------------------------------------------------
+<<Interface>>
+JpaRepository
+findAll()
+findAll(Sort)
+findAll(Iterable<ID>)
+save(Iterable<S>)
+flush()
+saveAndFlush
+deleteInBatch(Iterable<T>)
+deleteAllInBatch()
+getOne(ID)
+-----------------------------------------------------------------
+
+스프링 데이터 JPA는 구현 클래스를 대신 생성한다.
+
+<<example of JPA Repository>>
+public List<Member> findByUsernameAndAgeGraterThan(String username, int age) {
+return em.createQuery("select m from Member m where m.usernmae = :username and m.age > age")
+    .setParameter("username", username)
+    .setParameter("age", age)
+    .getResultList();
+}
+
+<<example of Spring dataJPA>>
+public interface MemberRepository extends JpaRepository<Member, Long> {
+    List<Member> findByUsernameAndAgeGreaterThan(String username, int age);
+}
+
+
+public interface SpringDataJpaItemRepository extends JpaRepository<Item, Long>
+{
+//쿼리 메서드 기능
+List<Item> findByItemNameLike(String itemName);
+
+//쿼리 직접 실행
+//JPQL뿐만 아니라 JPA의 JPA native query 도 지원하기 때문에 JPQL 대신에 SQL을 직접 사용 할 수도 있다.
+@Query("select i from Item i where i.itemName like :itemName and i.price <= :price")
+    List<Item> findItems(@Param("itemName") String itemName, @Param("price") Integer price);
+}

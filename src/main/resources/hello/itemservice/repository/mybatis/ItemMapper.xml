@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="hello.itemservice.repository.mybatis.ItemMapper">
+    <insert id="save" useGeneratedKeys="true" keyProperty="id">
+        insert into item (item_name, price, quantity)
+        values (#{itemName}, #{price}, #{quantity})
+    </insert>
+
+    <update id="update">
+        update item
+        set item_name=#{updateParam.itemName},
+            price=#{updateParam.price},
+            quantity=#{updateParam.quantity}
+        where id = #{id}
+    </update>
+    <!--select의 반환 결과를 Item으로 바꾸어 준다.-->
+    <!--mybatis.type-aliases-package=hello.itemservice.domain 때문에 모든 패키지 명을 적지 않아도 됨.-->
+    <!--mybatis.configuration.map-underscore-to-camel-case=true 적어서 query에 item_name이 아니라 itemName만 적어도 된다.-->
+    <select id="findById" resultType="Item">
+        select id, item_name, price, quantity
+        from item
+        where id = #{id}
+    </select>
+    <select id="findAll" resultType="Item">
+        select id, item_name, price, quantity
+        from item
+        <!--
+        if 가 하나라도 성공하면 처음에 나오는 and를 where로 변환해 준다.
+        모두 실패하면 where를 만들지 않는다.
+        xml에서는 > 또는 < & 사용 불가 하다. 그래서 탈출 문자를 적어야 한다.
+        -->
+        <where>
+            <if test="itemName != null and itemName != ''">
+                <!--                탈출문 적어야함-->
+                <!--                and price &lt; #{maxPrice}-->
+                <!--                cdata 문법-->
+                and item_name like concat('%',#{itemName},'%')
+            </if>
+            <if test="maxPrice != null">
+                and price &lt;= #{maxPrice}
+            </if>
+        </where>
+    </select>
+
+<!--
+The provided MyBatis XML appears to be a dynamic SQL query template. It is designed to generate a SQL query that retrieves rows from a table named "POST" based on a list of IDs provided as input. The query is built using the MyBatis <select> and <foreach> elements for dynamic SQL generation.
+
+Here's the breakdown of the query generation:
+
+The <select> element defines the beginning of the query and specifies the result type as "domain.blog.Post" (presumably a Java class representing a blog post).
+
+The <where> element is used to start the conditional block, which will be populated based on the input.
+
+The <foreach> element iterates over the "list" collection, which is expected to contain a list of IDs. For each ID in the list, it generates a placeholder (#{item}) that represents the ID.
+
+Inside the <foreach> element:
+
+open="ID in (" indicates the beginning of the WHERE clause, specifying that the "ID" column will be used in an IN condition.
+separator="," specifies the separator between individual IDs.
+close=")" indicates the end of the WHERE clause.
+nullable="true" allows the list to be nullable, meaning the WHERE clause won't be added if the list is empty.
+The query generation concludes with a closing </where> element.
+
+In summary, the MyBatis XML template generates a SQL query that retrieves rows from the "POST" table where the "ID" column matches any of the IDs provided in the input list. The resulting query would look something like:
+
+sql
+Copy code
+SELECT *
+FROM POST P
+WHERE ID in (id1, id2, id3, ...)
+Here, "id1", "id2", "id3", and so on are placeholders for the actual IDs in the input list. The exact query generated will depend on the content of the input list containing the IDs.
+
+<select id="selectPostIn" resultType="domain.blog.Post">
+  SELECT *
+  FROM POST P
+  <where>
+    <foreach item="item" index="index" collection="list"
+        open="ID in (" separator="," close=")" nullable="true">
+          #{item}
+    </foreach>
+  </where>
+</select>
+-->
+
+
+</mapper>
